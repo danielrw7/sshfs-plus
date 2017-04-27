@@ -1,6 +1,6 @@
 # sshfs-plus
 
-A helper script to mount and unmount remote directories
+A profile based helper script for sshfs
 
 ### Setup:
 1. Install [sshfs](https://github.com/libfuse/sshfs).
