@@ -1,0 +1,8 @@
+PROFILES=""
+
+add_profile() {
+   export "profile_$1"="$2"
+   PROFILES="$PROFILES
+$1"
+}
+

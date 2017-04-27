@@ -1,0 +1,102 @@
+#!/bin/bash
+
+# Remove slashes ("/") from tmp directory name
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TMP_DIR="$ROOT_DIR/tmp"
+
+usage_help="sshfs-plus (h|help)"
+usage_mount="sshfs-plus (m|mount) [profile_key]"
+usage_unmount="sshfs-plus (u|unmount) [profile_key]"
+usage_list="sshfs-plus (l|list)"
+usage_profiles="sshfs-plus (p|profiles)"
+usage_add="sshfs-plus (a|add) [profile_key] [remote_path]"
+usage_dir="sshfs-plus (d|dir|directory) [profile_key]"
+
+usage() {
+	echo "help			$usage_help"
+	echo "mount			$usage_mount"
+	echo "unmount			$usage_unmount"
+	echo "list mounted dirs	$usage_list"
+	echo "list profiles		$usage_profiles"
+	echo "add profile		$usage_add"
+	echo "get mounted dir		$usage_dir"
+}
+
+case "$1" in
+	"" | "h" | "help")
+		usage
+		exit 1
+		;;
+	*)
+		source "$ROOT_DIR"/.profiles
+		command=$1
+		shift
+		;;
+
+esac
+
+case "$command" in
+	"m")
+		command="mount"
+		;;
+	"u")
+		command="unmount"
+		;;
+
+esac
+
+case "$command" in
+	"mount" | "unmount")
+		source "$ROOT_DIR"/.profiles
+		if [ ! -n "$1" ]; then
+			usage_var="usage_$command"
+			echo "Usage: ${!usage_var}"
+			exit 1
+		fi
+		profile_key="$1"
+		profile_var=profile_"$profile_key"
+		profile_remote=${!profile_var}
+		if [ ! -n "$profile_remote" ]; then
+			echo "Profile $1 not found"
+			exit 1
+		fi
+		mount_dir="$TMP_DIR/$profile_key"
+		;;
+esac
+
+case "$command" in
+	"mount")
+		echo "Mounting $profile_key ($profile_remote)"
+		mkdir "$mount_dir" || :
+		sshfs "$profile_remote" "$mount_dir"
+		;;
+	"unmount")
+		echo "Unmounting $profile_key ($profile_remote)"
+		fusermount -u "$mount_dir" || :
+		rmdir "$mount_dir" || :
+		;;
+	"l" | "list")
+		echo `ls "$TMP_DIR"`
+		;;
+	"d" | "dir" | "directory")
+		if [ ! -n "$1" ]; then
+			echo "Usage: $usage_dir"
+			exit 1
+		fi
+		echo "$TMP_DIR/$1"
+		;;
+	"p" | "profiles")
+		echo "PROFILES: $ROOT_DIR/.profiles$PROFILES"
+		;;
+	"a" | "add")
+		if [ ! -n "$1" ] || [ ! -n "$2" ]; then
+			echo "Usage: $usage_add"
+			exit 1
+		fi
+		echo "add_profile	$1	$2" >> "$ROOT_DIR/.profiles"
+		;;
+	*)
+		usage
+		exit 1
+		;;	
+esac
